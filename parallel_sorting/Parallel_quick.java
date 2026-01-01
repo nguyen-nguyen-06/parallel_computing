@@ -54,10 +54,20 @@ public class Parallel_quick extends Sorting{
                 int pivotPosition = leftHalfSize + 1;
                 POOL.invoke(new LowerEqualFilter(input, lowerEqual, indexLeftHalf, output, lo, hi, lo));
                 POOL.invoke(new GreaterFilter(input, greater, indexRightHalf, output, lo, hi, hi));
+                //how about 
+                //POOL.invoke(new LowerEqualFilter(input, lowerEqual, indexLeftHalf, output, lo, hi -1, lo));
+                //POOL.invoke(new GreaterFilter(input, greater, indexRightHalf, output, lo, hi - 1, hi)); still hi because offset from the pivot
+                //lo to hi - 1 because lowerEqual made from new int[hi - lo]
                 output[pivotPosition] = pivotVal;
                 input = output;
+                //
+                //1 bug here input is shared but output is not
+                //
                 ParallelQuickTask leftTask = new ParallelQuickTask(input, lo, pivotPosition - 1);
                 ParallelQuickTask rightTask = new ParallelQuickTask(input, pivotPosition + 1, hi);
+                //How about delete input = output and use 
+                //ParallelQuickTask leftTask = new ParallelQuickTask(output, lo, pivotPosition - 1);
+                //ParallelQuickTask rightTask = new ParallelQuickTask(outputput, pivotPosition + 1, hi);
                 leftTask.fork();
                 rightTask.compute();
                 leftTask.join();
@@ -65,7 +75,7 @@ public class Parallel_quick extends Sorting{
         }
     }
 
-
+    //correct so far
     public static int[] parallelPrefixSum(int[] list){
         Node root = POOL.invoke(new BuildSumTree(list, 0, list.length - 1));
         int[] prefixSum = new int[list.length];
