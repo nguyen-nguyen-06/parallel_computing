@@ -20,54 +20,50 @@ public class Parallel_quick extends Sorting{
     }
 
     public int[] sort(){
-        int[] list = getList();
-        if (list.length <= 1){
-            return list;
+        int[] input = getList();
+        if (input.length <= 1){
+            return input;
         } 
-        POOL.invoke(new ParallelQuickTask(list, 0, list.length - 1));
-        return list;
+        int[] output = new int[input.length];
+        POOL.invoke(new ParallelQuickTask(input, output, 0));
+        return output;
     }
 
     public class ParallelQuickTask extends RecursiveAction{
         private int[] input;
-        private int lo;
-        private int hi;  // inclusive
+        public int[] output;
+        public int offset;
 
-        public ParallelQuickTask(int[] input, int lo, int hi) {
+        public ParallelQuickTask(int[] input, int[] output, int offset) {
             this.input = input;
-            this.lo = lo;
-            this.hi = hi;
+            this.output = output;
+            this.offset = offset;
         }
 
         public void compute(){
-            if(hi - lo <= CUTOFFQUICK){
-                Arrays.sort(input, lo, hi + 1);
+            if(input.length <= CUTOFFQUICK){
+                Arrays.sort(input);
+                System.arraycopy(input, 0, output, offset, input.length);
             } else{
-                int pivotVal = input[hi];
-                int[] lowerEqual = new int[hi - lo];//exclude the pivot 
-                int[] greater = new int[hi - lo]; //exclude the pivot
-                POOL.invoke(new LowerEqualGreaterMap(input, lowerEqual, greater, pivotVal, lo, hi - 1)); //exclude the pivot
-                int[] indexLeftHalf = parallelPrefixSum(lowerEqual);
-                int[] indexRightHalf = parallelPrefixSum(greater);
-                int[] output = new int[input.length];
-                int leftHalfSize = indexLeftHalf[indexLeftHalf.length - 1];
-                int pivotPosition = leftHalfSize + 1;
-                POOL.invoke(new LowerEqualFilter(input, lowerEqual, indexLeftHalf, output, lo, hi, lo));
-                POOL.invoke(new GreaterFilter(input, greater, indexRightHalf, output, lo, hi, hi));
-                //how about 
-                //POOL.invoke(new LowerEqualFilter(input, lowerEqual, indexLeftHalf, output, lo, hi -1, lo));
-                //POOL.invoke(new GreaterFilter(input, greater, indexRightHalf, output, lo, hi - 1, hi)); still hi because offset from the pivot
-                //lo to hi - 1 because lowerEqual made from new int[hi - lo]
-                output[pivotPosition] = pivotVal;
-                input = output;
-                //
-                //1 bug here input is shared but output is not
-                //
-                ParallelQuickTask leftTask = new ParallelQuickTask(input, lo, pivotPosition - 1);
-                ParallelQuickTask rightTask = new ParallelQuickTask(input, pivotPosition + 1, hi);
-                //How about delete input = output and use 
-                //ParallelQuickTask leftTask = new ParallelQuickTask(output, lo, pivotPosition - 1);
-                //ParallelQuickTask rightTask = new ParallelQuickTask(outputput, pivotPosition + 1, hi);
+                int pivotVal = input[input.length - 1];
+                int[] lowerEqual = new int[input.length - 1]; //exclude the pivot
+                int[] greater = new int[input.length - 1]; //exclude the pivot
+
+                POOL.invoke(new LowerEqualGreaterMap(input, lowerEqual, greater, pivotVal, 0, input.length - 2)); //map everything except the pivot
+
+                int[] indexLeftPrefix = parallelPrefixSum(lowerEqual);
+                int[] indexRightPrefix = parallelPrefixSum(greater);
+                int pivotNewPosition = indexLeftPrefix[indexLeftPrefix.length - 1];
+                int[] leftLower = new int[pivotNewPosition];
+                int[] rightGreater = new int[input.length - 1 - pivotNewPosition];
+                
+                POOL.invoke(new ParallelFilter(input, lowerEqual, indexLeftPrefix, leftLower, 0, indexLeftPrefix.length - 1));
+                output[pivotNewPosition + offset] = pivotVal;
+                POOL.invoke(new ParallelFilter(input, greater, indexRightPrefix, rightGreater, 0, indexRightPrefix.length - 1));
+
+                ParallelQuickTask leftTask = new ParallelQuickTask(leftLower, output, offset);
+                ParallelQuickTask rightTask = new ParallelQuickTask(rightGreater, output, offset + pivotNewPosition + 1);
+
                 leftTask.fork();
                 rightTask.compute();
                 leftTask.join();
@@ -75,7 +71,7 @@ public class Parallel_quick extends Sorting{
         }
     }
 
-    //correct so far
+
     public static int[] parallelPrefixSum(int[] list){
         Node root = POOL.invoke(new BuildSumTree(list, 0, list.length - 1));
         int[] prefixSum = new int[list.length];
@@ -180,9 +176,6 @@ public class Parallel_quick extends Sorting{
         }
     }
 
-    // 0 0 1 0 0 0 0 1 0 1(pivot is left outside) ---PrefixSum---> 0 0 1 1 1 1 1 1 2 2 -------> map start + 0 start + 1 start + 2 in output
-    // -1 -1 0 -1 -1 -1 -1 0 -1 ----PrefixSum----> -1 -2 -2 -3 -4 -5 -6 -6 -7 -----> map end - 0, end -1 ... in output
-    //then move pivot 
     private static class LowerEqualGreaterMap extends RecursiveAction{
         private int[] input;
         private int[] lowerEqual;
@@ -208,7 +201,7 @@ public class Parallel_quick extends Sorting{
                         greater[i] = 0;
                     } else {
                         lowerEqual[i] = 0;
-                        greater[i] = -1;
+                        greater[i] = 1;
                     }
                 }
             } else {
@@ -222,76 +215,34 @@ public class Parallel_quick extends Sorting{
         }
     }
 
-    // 0 0 1 0 0 0 0 1 0 1(pivot is left outside) ---PrefixSum---> 0 0 1 1 1 1 1 1 2 2 -------> map start + 0 start + 1 start + 2 in output
-    // -1 -1 0 -1 -1 -1 -1 0 -1 ----PrefixSum----> -1 -2 -2 -3 -4 -5 -6 -6 -7 -----> map end, end -1 ... in output
-    //then move pivot 
-    private static class LowerEqualFilter extends RecursiveAction{
-        private int[] input;
-        private int[] lowerEqual;
-        private int[] indexLeftHalf;
-        private int[] output;
-        private int lo;
-        private int hi;
-        private int start;
+    public static class ParallelFilter extends RecursiveAction{
+        public int[] input;
+        public int[] bitVector;
+        public int[] indexPrefix;
+        public int[] filter;
+        public int lo;
+        public int hi;
 
-        public LowerEqualFilter(int[] input, int[] lowerEqual, int[] indexLeftHalf, int[] output, int lo, int hi, int start){
+        public ParallelFilter(int[] input, int[] bitVector, int[] indexPrefix, int[] filter, int lo, int hi){
             this.input = input;
-            this.lowerEqual = lowerEqual;
-            this.indexLeftHalf = indexLeftHalf;
-            this.output = output;
-            this.lo = lo; // lo and hi is range 
-            this.hi = hi;
-            this.start = start; //offset 
+            this.bitVector = bitVector;
+            this.indexPrefix = indexPrefix;
+            this.filter = filter;
+            this.lo = lo; 
+            this.hi = hi; 
         }
 
         public void compute(){
             if(hi - lo <= CUTOFF){
                 for(int i = lo; i <= hi; i++){
-                    if(lowerEqual[i] != 0){
-                        output[start + indexLeftHalf[i] - 1] = input[start + i];
+                    if(bitVector[i] == 1){
+                        filter[indexPrefix[i] - 1] = input[i];
                     }
                 }
             } else {
                 int mid = lo + (hi - lo)/2;
-                LowerEqualFilter leftTask = new LowerEqualFilter(input, lowerEqual, indexLeftHalf, output, lo, mid, start);
-                LowerEqualFilter rightTask = new LowerEqualFilter(input, lowerEqual, indexLeftHalf, output, mid, hi, start);
-                leftTask.fork();
-                rightTask.compute();
-                leftTask.join();
-            }
-        }
-    }
-
-    private static class GreaterFilter extends RecursiveAction{
-        private int[] input;
-        private int[] greater;
-        private int[] indexRightHalf;
-        private int[] output;
-        private int lo;
-        private int hi;
-        private int end;
-
-        public GreaterFilter(int[] input, int[] greater, int[] indexRightHalf, int[] output, int lo, int hi, int end){
-            this.input = input;
-            this.greater = greater;
-            this.indexRightHalf = indexRightHalf;
-            this.output = output;
-            this.lo = lo;
-            this.hi = hi;
-            this.end = end;
-        }
-
-        public void compute(){
-            if(hi - lo <= CUTOFF){
-                for(int i = lo; i <= hi; i++){
-                    if(greater[i] != 0){
-                        output[end + indexRightHalf[i] + 1] = input[end - i];
-                    }
-                }
-            } else {
-                int mid = lo + (hi - lo)/2;
-                GreaterFilter leftTask = new GreaterFilter(input, greater, indexRightHalf, output, lo, mid, end);
-                GreaterFilter rightTask = new GreaterFilter(input, greater, indexRightHalf, output, mid, hi, end);
+                ParallelFilter leftTask = new ParallelFilter(input, bitVector, indexPrefix, filter, lo, mid);
+                ParallelFilter rightTask = new ParallelFilter(input, bitVector, indexPrefix, filter, mid + 1, hi);
                 leftTask.fork();
                 rightTask.compute();
                 leftTask.join();
