@@ -29,10 +29,20 @@ public class Parallel_quick extends Sorting{
         return output;
     }
 
+    public static int[] parallelPrefixSum(int[] list){
+        Node root = POOL.invoke(new BuildSumTree(list, 0, list.length - 1));
+        int[] prefixSum = new int[list.length];
+        POOL.invoke(new PopulatePrefixSum(list, prefixSum, root, false, null, null));
+        return prefixSum;
+    }
+
+    //This not in-place quick sort algo have memory complexity of O(nlogn) or may be O(n^2)
+    //Trade off with speed up of n/c.P < speed up < n/logn (with c is a large constant, P is the number of processors) 
+    //Only good when we have large number of processor, very large memory and large input number
     public class ParallelQuickTask extends RecursiveAction{
         private int[] input;
         public int[] output;
-        public int offset;
+        public int offset; //nums of element in front in output
 
         public ParallelQuickTask(int[] input, int[] output, int offset) {
             this.input = input;
@@ -69,14 +79,6 @@ public class Parallel_quick extends Sorting{
                 leftTask.join();
             }
         }
-    }
-
-
-    public static int[] parallelPrefixSum(int[] list){
-        Node root = POOL.invoke(new BuildSumTree(list, 0, list.length - 1));
-        int[] prefixSum = new int[list.length];
-        POOL.invoke(new PopulatePrefixSum(list, prefixSum, root, false, null, null));
-        return prefixSum;
     }
 
     private static class Node{

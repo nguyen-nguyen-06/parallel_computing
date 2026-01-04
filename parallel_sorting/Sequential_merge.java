@@ -45,21 +45,15 @@ public class Sequential_merge extends Sorting {
 
         while (i <= mid && j <= end) {
             if (temp[i] <= temp[j]) {
-                list[k] = temp[i];
-                k++;
-                i++;
+                list[k++] = temp[i++];
             } else {
-                list[k] = temp[j];
-                k++;
-                j++;
+                list[k++] = temp[j++];
             }
         }
 
         // Copy remaining left half (right half already in place)
         while (i <= mid) {
-            list[k] = temp[i];
-            k++;
-            i++;
+            list[k++] = temp[i++];
         }
     }
 }
