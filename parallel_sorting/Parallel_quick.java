@@ -55,6 +55,10 @@ public class Parallel_quick extends Sorting{
                 Arrays.sort(input);
                 System.arraycopy(input, 0, output, offset, input.length);
             } else{
+
+                int pivotPosition = medianOfThree(0, input.length -1);
+                swap(pivotPosition, input.length - 1); //swap pivot to the end of input arr
+                
                 int pivotVal = input[input.length - 1];
                 int[] lowerEqual = new int[input.length - 1]; //exclude the pivot
                 int[] greater = new int[input.length - 1]; //exclude the pivot
@@ -78,6 +82,31 @@ public class Parallel_quick extends Sorting{
                 rightTask.compute();
                 leftTask.join();
             }
+        }
+
+        private int medianOfThree(int start, int end){
+            // Median of input[start], input[mid], input[end]
+            int mid = start + (end - start) / 2;
+
+            int a = input[start];
+            int b = input[mid];
+            int c = input[end];
+
+            // Return index of median value
+            if ((a <= b && b <= c) || (c <= b && b <= a)) {
+                return mid;
+            } else if ((b <= a && a <= c) || (c <= a && a <= b)) {
+                return start;
+            } else {
+                return end;
+            }
+        }
+
+
+        private void swap(int a, int b){
+            int temp = input[a];
+            input[a] = input[b];
+            input[b] = temp;
         }
     }
 
