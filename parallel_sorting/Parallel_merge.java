@@ -90,7 +90,7 @@ public class Parallel_merge extends Sorting{
                 mergeSortedArr();
             } else{
                 if(shortLen > longLen){
-                    swap();
+                    swapArr();
                 }
 
                 //median of longer arr to make sure the total size to compute after 
@@ -98,7 +98,7 @@ public class Parallel_merge extends Sorting{
                 int longMed = longStart + longLen/2; // the array is sorted so the mid point is also median
 
                 //the index where shortStart -> j are smaller than longArr[medLong]
-                int leftLower = lowerBound(shortArr, shortStart, shortEnd, longArr[longMed]);
+                int leftLower = lowerBoundInShortArr(shortStart, shortEnd, longArr[longMed]);
                 
                 // Calculate output positions
                 // Left side: long[Start..Med -1] + short[start..j]
@@ -108,7 +108,7 @@ public class Parallel_merge extends Sorting{
                 int numBeforeMedInShort = leftLower - shortStart + 1;
                 int medPositionAtMergedOutput = numBeforeMedInLong + numBeforeMedInShort + offset;
                 mergedArr[medPositionAtMergedOutput] = longArr[longMed];
-                //offset left = offste (or shortStart)
+                //offset left = offset (or shortStart)
                 //offset right = medPositionAtMergedOutput + 1
                 ParallelMerge leftTask = new ParallelMerge(shortArr, shortStart, leftLower,
                                              longArr, longStart, longMed - 1, mergedArr, offset);
@@ -143,13 +143,13 @@ public class Parallel_merge extends Sorting{
 
         // Find the highest index i such that shortArr[i] <= val
         // return start - 1 when all element > val
-        private int lowerBound(int[] arr, int start, int end, int val) {
+        private int lowerBoundInShortArr(int start, int end, int val) {
             int ans = start - 1;
 
             while (start <= end) {
                 int mid = start + (end - start) / 2;
 
-                if (arr[mid] <= val) {
+                if (shortArr[mid] <= val) {
                     ans = mid;        // mid is a valid candidate
                     start = mid + 1;  // try to find a higher index
                 } else {
@@ -160,7 +160,7 @@ public class Parallel_merge extends Sorting{
         }
 
         //swap 2 array and their attributes
-        private void swap(){
+        private void swapArr(){
             int[] tempArr = shortArr;
             shortArr = longArr;
             longArr = tempArr;
