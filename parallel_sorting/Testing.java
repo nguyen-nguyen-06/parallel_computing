@@ -9,15 +9,17 @@ import java.util.Random;
 
 public class Testing {
 
-    private static final int SMALL_SIZE = 100;
-    private static final int MEDIUM_SIZE = 10_000;
-    private static final int LARGE_SIZE = 1_000_000;
-    private static final int SPEEDUP_TEST_SIZE = 5_000_000;
+    private static final int SMALL_SIZE = 10_000;
+    private static final int MEDIUM_SIZE = 100_000;
+    private static final int LARGE_SIZE = 2_000_000;
+    private static final int SPEEDUP_TEST_SIZE = 10_000_000;
     private static final int WARMUP_ITERATIONS = 3;
     private static final int TEST_ITERATIONS = 5;
 
     @Before
     public void setUp() {
+        //Set cutoff values for parallel quicksort simple
+        Parallel_quick_simple.CUTOFF = 100;
         // Set cutoff values for parallel quicksort
         Parallel_quick.CUTOFF = 500;
         Parallel_quick.CUTOFFQUICK = 100;
@@ -631,33 +633,229 @@ public class Testing {
         assertArrayEquals("Parallel merge sort produced incorrect result", expected, parallelResult);
     }
 
-    // ==================== COMPARISON TESTS: Parallel_quick vs Parallel_merge vs Arrays.sort ====================
+    // ==================== PARALLEL QUICK SIMPLE CORRECTNESS TESTS ====================
 
     @Test
-    public void testComparisonSmallArray() {
-        System.out.println("\n=== Comparison Test: Small Array (" + SMALL_SIZE + " elements) ===");
-        measureComparison(SMALL_SIZE);
+    public void testParallelQuickSimpleEmptyArray() {
+        int[] arr = {};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{}, result);
     }
 
     @Test
-    public void testComparisonMediumArray() {
-        System.out.println("\n=== Comparison Test: Medium Array (" + MEDIUM_SIZE + " elements) ===");
-        measureComparison(MEDIUM_SIZE);
+    public void testParallelQuickSimpleSingleElement() {
+        int[] arr = {42};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{42}, result);
     }
 
     @Test
-    public void testComparisonLargeArray() {
-        System.out.println("\n=== Comparison Test: Large Array (" + LARGE_SIZE + " elements) ===");
-        measureComparison(LARGE_SIZE);
+    public void testParallelQuickSimpleTwoElements() {
+        int[] arr = {5, 2};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{2, 5}, result);
     }
 
     @Test
-    public void testComparisonVeryLargeArray() {
-        System.out.println("\n=== Comparison Test: Very Large Array (" + SPEEDUP_TEST_SIZE + " elements) ===");
-        measureComparison(SPEEDUP_TEST_SIZE);
+    public void testParallelQuickSimpleAlreadySorted() {
+        int[] arr = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, result);
     }
 
-    private void measureComparison(int size) {
+    @Test
+    public void testParallelQuickSimpleReverseSorted() {
+        int[] arr = {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, result);
+    }
+
+    @Test
+    public void testParallelQuickSimpleWithDuplicates() {
+        int[] arr = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 9}, result);
+    }
+
+    @Test
+    public void testParallelQuickSimpleAllSameElements() {
+        int[] arr = {7, 7, 7, 7, 7};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{7, 7, 7, 7, 7}, result);
+    }
+
+    @Test
+    public void testParallelQuickSimpleNegativeNumbers() {
+        int[] arr = {-5, 3, -1, 0, -8, 2};
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+        assertArrayEquals(new int[]{-8, -5, -1, 0, 2, 3}, result);
+    }
+
+    @Test
+    public void testParallelQuickSimpleRandomSmall() {
+        int[] arr = generateRandomArray(SMALL_SIZE);
+        int[] expected = arr.clone();
+        Arrays.sort(expected);
+
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void testParallelQuickSimpleRandomMedium() {
+        int[] arr = generateRandomArray(MEDIUM_SIZE);
+        int[] expected = arr.clone();
+        Arrays.sort(expected);
+
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+
+        assertArrayEquals(expected, result);
+    }
+
+    @Test
+    public void testParallelQuickSimpleRandomLarge() {
+        int[] arr = generateRandomArray(LARGE_SIZE);
+        int[] expected = arr.clone();
+        Arrays.sort(expected);
+
+        Parallel_quick_simple sorter = new Parallel_quick_simple(arr.clone());
+        int[] result = sorter.sort();
+
+        assertArrayEquals(expected, result);
+    }
+
+    // ==================== PARALLEL QUICK SIMPLE EQUIVALENCE TESTS ====================
+
+    @Test
+    public void testSequentialAndParallelQuickSimpleProduceSameResult() {
+        int[] arr = generateRandomArray(MEDIUM_SIZE);
+
+        Sequential_quick sequentialSorter = new Sequential_quick(arr.clone());
+        Parallel_quick_simple parallelSorter = new Parallel_quick_simple(arr.clone());
+
+        int[] sequentialResult = sequentialSorter.sort();
+        int[] parallelResult = parallelSorter.sort();
+
+        assertArrayEquals(sequentialResult, parallelResult);
+    }
+
+    // ==================== PARALLEL QUICK SIMPLE SPEEDUP TESTS ====================
+
+    @Test
+    public void testQuickSimpleSpeedupSmallArray() {
+        System.out.println("\n=== Quick Simple Speedup Test: Small Array (" + SMALL_SIZE + " elements) ===");
+        measureQuickSimpleSpeedup(SMALL_SIZE);
+    }
+
+    @Test
+    public void testQuickSimpleSpeedupMediumArray() {
+        System.out.println("\n=== Quick Simple Speedup Test: Medium Array (" + MEDIUM_SIZE + " elements) ===");
+        measureQuickSimpleSpeedup(MEDIUM_SIZE);
+    }
+
+    @Test
+    public void testQuickSimpleSpeedupLargeArray() {
+        System.out.println("\n=== Quick Simple Speedup Test: Large Array (" + LARGE_SIZE + " elements) ===");
+        measureQuickSimpleSpeedup(LARGE_SIZE);
+    }
+
+    @Test
+    public void testQuickSimpleSpeedupVeryLargeArray() {
+        System.out.println("\n=== Quick Simple Speedup Test: Very Large Array (" + SPEEDUP_TEST_SIZE + " elements) ===");
+        measureQuickSimpleSpeedup(SPEEDUP_TEST_SIZE);
+    }
+
+    private void measureQuickSimpleSpeedup(int size) {
+        int[] baseArray = generateRandomArray(size);
+
+        // Warmup runs
+        System.out.println("Warming up...");
+        for (int i = 0; i < WARMUP_ITERATIONS; i++) {
+            new Sequential_quick(baseArray.clone()).sort();
+            new Parallel_quick_simple(baseArray.clone()).sort();
+        }
+
+        // Measure Sequential Quick Sort
+        long sequentialTotalTime = 0;
+        for (int i = 0; i < TEST_ITERATIONS; i++) {
+            int[] arr = baseArray.clone();
+            long start = System.nanoTime();
+            new Sequential_quick(arr).sort();
+            long end = System.nanoTime();
+            sequentialTotalTime += (end - start);
+        }
+        double sequentialAvgMs = (sequentialTotalTime / TEST_ITERATIONS) / 1_000_000.0;
+
+        // Measure Parallel Quick Simple Sort
+        long parallelTotalTime = 0;
+        for (int i = 0; i < TEST_ITERATIONS; i++) {
+            int[] arr = baseArray.clone();
+            long start = System.nanoTime();
+            new Parallel_quick_simple(arr).sort();
+            long end = System.nanoTime();
+            parallelTotalTime += (end - start);
+        }
+        double parallelAvgMs = (parallelTotalTime / TEST_ITERATIONS) / 1_000_000.0;
+
+        // Calculate speedup
+        double speedup = sequentialAvgMs / parallelAvgMs;
+
+        // Print results
+        System.out.println("Array size: " + size);
+        System.out.println("Sequential Quick Sort avg time:       " + String.format("%.3f", sequentialAvgMs) + " ms");
+        System.out.println("Parallel Quick Simple Sort avg time:  " + String.format("%.3f", parallelAvgMs) + " ms");
+        System.out.println("Speedup: " + String.format("%.2f", speedup) + "x");
+        System.out.println("Available processors: " + Runtime.getRuntime().availableProcessors());
+
+        // Verify correctness
+        int[] expected = baseArray.clone();
+        Arrays.sort(expected);
+
+        int[] sequentialResult = new Sequential_quick(baseArray.clone()).sort();
+        int[] parallelResult = new Parallel_quick_simple(baseArray.clone()).sort();
+
+        assertArrayEquals("Sequential sort produced incorrect result", expected, sequentialResult);
+        assertArrayEquals("Parallel Quick Simple sort produced incorrect result", expected, parallelResult);
+    }
+
+    // ==================== COMPARISON TESTS: All Parallel Sorts ====================
+
+    @Test
+    public void testFullComparisonSmallArray() {
+        System.out.println("\n=== Full Comparison Test: Small Array (" + SMALL_SIZE + " elements) ===");
+        measureFullComparison(SMALL_SIZE);
+    }
+
+    @Test
+    public void testFullComparisonMediumArray() {
+        System.out.println("\n=== Full Comparison Test: Medium Array (" + MEDIUM_SIZE + " elements) ===");
+        measureFullComparison(MEDIUM_SIZE);
+    }
+
+    @Test
+    public void testFullComparisonLargeArray() {
+        System.out.println("\n=== Full Comparison Test: Large Array (" + LARGE_SIZE + " elements) ===");
+        measureFullComparison(LARGE_SIZE);
+    }
+
+    @Test
+    public void testFullComparisonVeryLargeArray() {
+        System.out.println("\n=== Full Comparison Test: Very Large Array (" + SPEEDUP_TEST_SIZE + " elements) ===");
+        measureFullComparison(SPEEDUP_TEST_SIZE);
+    }
+
+    private void measureFullComparison(int size) {
         int[] baseArray = generateRandomArray(size);
 
         // Warmup runs
@@ -666,10 +864,11 @@ public class Testing {
             int[] arr1 = baseArray.clone();
             Arrays.sort(arr1);
             new Parallel_quick(baseArray.clone()).sort();
+            new Parallel_quick_simple(baseArray.clone()).sort();
             new Parallel_merge(baseArray.clone()).sort();
         }
 
-        // Measure Java's Arrays.sort (Dual-Pivot Quicksort for primitives)
+        // Measure Java's Arrays.sort
         long javaSortTotalTime = 0;
         for (int i = 0; i < TEST_ITERATIONS; i++) {
             int[] arr = baseArray.clone();
@@ -691,6 +890,17 @@ public class Testing {
         }
         double parallelQuickAvgMs = (parallelQuickTotalTime / TEST_ITERATIONS) / 1_000_000.0;
 
+        // Measure Parallel Quick Simple Sort
+        long parallelQuickSimpleTotalTime = 0;
+        for (int i = 0; i < TEST_ITERATIONS; i++) {
+            int[] arr = baseArray.clone();
+            long start = System.nanoTime();
+            new Parallel_quick_simple(arr).sort();
+            long end = System.nanoTime();
+            parallelQuickSimpleTotalTime += (end - start);
+        }
+        double parallelQuickSimpleAvgMs = (parallelQuickSimpleTotalTime / TEST_ITERATIONS) / 1_000_000.0;
+
         // Measure Parallel Merge Sort
         long parallelMergeTotalTime = 0;
         for (int i = 0; i < TEST_ITERATIONS; i++) {
@@ -703,19 +913,23 @@ public class Testing {
         double parallelMergeAvgMs = (parallelMergeTotalTime / TEST_ITERATIONS) / 1_000_000.0;
 
         // Find the fastest
-        double fastest = Math.min(javaSortAvgMs, Math.min(parallelQuickAvgMs, parallelMergeAvgMs));
+        double fastest = Math.min(javaSortAvgMs,
+            Math.min(parallelQuickAvgMs,
+                Math.min(parallelQuickSimpleAvgMs, parallelMergeAvgMs)));
 
         // Print results
         System.out.println("Array size: " + size);
         System.out.println("Available processors: " + Runtime.getRuntime().availableProcessors());
-        System.out.println("--------------------------------------------");
-        System.out.println(String.format("%-25s %10.3f ms  (%.2fx)",
+        System.out.println("----------------------------------------------------");
+        System.out.println(String.format("%-30s %10.3f ms  (%.2fx)",
             "Arrays.sort():", javaSortAvgMs, javaSortAvgMs / fastest));
-        System.out.println(String.format("%-25s %10.3f ms  (%.2fx)",
+        System.out.println(String.format("%-30s %10.3f ms  (%.2fx)",
             "Parallel Quick Sort:", parallelQuickAvgMs, parallelQuickAvgMs / fastest));
-        System.out.println(String.format("%-25s %10.3f ms  (%.2fx)",
+        System.out.println(String.format("%-30s %10.3f ms  (%.2fx)",
+            "Parallel Quick Simple Sort:", parallelQuickSimpleAvgMs, parallelQuickSimpleAvgMs / fastest));
+        System.out.println(String.format("%-30s %10.3f ms  (%.2fx)",
             "Parallel Merge Sort:", parallelMergeAvgMs, parallelMergeAvgMs / fastest));
-        System.out.println("--------------------------------------------");
+        System.out.println("----------------------------------------------------");
 
         // Determine winner
         String winner;
@@ -723,6 +937,8 @@ public class Testing {
             winner = "Arrays.sort()";
         } else if (fastest == parallelQuickAvgMs) {
             winner = "Parallel Quick Sort";
+        } else if (fastest == parallelQuickSimpleAvgMs) {
+            winner = "Parallel Quick Simple Sort";
         } else {
             winner = "Parallel Merge Sort";
         }
@@ -733,9 +949,11 @@ public class Testing {
         Arrays.sort(expected);
 
         int[] parallelQuickResult = new Parallel_quick(baseArray.clone()).sort();
+        int[] parallelQuickSimpleResult = new Parallel_quick_simple(baseArray.clone()).sort();
         int[] parallelMergeResult = new Parallel_merge(baseArray.clone()).sort();
 
         assertArrayEquals("Parallel Quick Sort produced incorrect result", expected, parallelQuickResult);
+        assertArrayEquals("Parallel Quick Simple Sort produced incorrect result", expected, parallelQuickSimpleResult);
         assertArrayEquals("Parallel Merge Sort produced incorrect result", expected, parallelMergeResult);
     }
 
@@ -794,13 +1012,42 @@ public class Testing {
         test.testMergeSpeedupLargeArray();
         test.testMergeSpeedupVeryLargeArray();
 
-        // Run comparison tests
         System.out.println("\n\n========================================");
-        System.out.println("Comparison: Parallel_quick vs Parallel_merge vs Arrays.sort()\n");
-        test.testComparisonSmallArray();
-        test.testComparisonMediumArray();
-        test.testComparisonLargeArray();
-        test.testComparisonVeryLargeArray();
+        System.out.println("Running Parallel Quick Simple Tests...\n");
+
+        // Run Parallel Quick Simple correctness tests
+        System.out.print("Testing Parallel Quick Simple Sort correctness... ");
+        test.testParallelQuickSimpleEmptyArray();
+        test.testParallelQuickSimpleSingleElement();
+        test.testParallelQuickSimpleTwoElements();
+        test.testParallelQuickSimpleAlreadySorted();
+        test.testParallelQuickSimpleReverseSorted();
+        test.testParallelQuickSimpleWithDuplicates();
+        test.testParallelQuickSimpleAllSameElements();
+        test.testParallelQuickSimpleNegativeNumbers();
+        test.testParallelQuickSimpleRandomSmall();
+        test.testParallelQuickSimpleRandomMedium();
+        test.testParallelQuickSimpleRandomLarge();
+        System.out.println("PASSED");
+
+        System.out.print("Testing Sequential and Parallel Quick Simple equivalence... ");
+        test.testSequentialAndParallelQuickSimpleProduceSameResult();
+        System.out.println("PASSED");
+
+        // Run Parallel Quick Simple speedup tests
+        System.out.println("\n=== Parallel Quick Simple Speedup Tests ===");
+        test.testQuickSimpleSpeedupSmallArray();
+        test.testQuickSimpleSpeedupMediumArray();
+        test.testQuickSimpleSpeedupLargeArray();
+        test.testQuickSimpleSpeedupVeryLargeArray();
+
+        // Run full comparison tests (all parallel sorts)
+        System.out.println("\n\n========================================");
+        System.out.println("Full Comparison: All Parallel Sorts vs Arrays.sort()\n");
+        test.testFullComparisonSmallArray();
+        test.testFullComparisonMediumArray();
+        test.testFullComparisonLargeArray();
+        test.testFullComparisonVeryLargeArray();
 
         System.out.println("\n=== All tests completed ===");
     }
