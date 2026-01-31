@@ -84,7 +84,6 @@ public class Parallel_matrix extends Matrix_mul{
         private int end; // exclusively
 
         public DotProductTask(double[][] matA, double[][] matB, int row, int col, int start, int end){
-            // TODO: implement constructor
             this.matA = matA;
             this.matB = matB;
             this.row = row;
