@@ -34,7 +34,6 @@ public class Sequential_merge extends Sorting {
     }
 
     private void merge(int[] list, int start, int mid, int end, int[] temp){
-        // Copy to temp array
         for (int i = start; i <= end; i++) {
             temp[i] = list[i];
         }

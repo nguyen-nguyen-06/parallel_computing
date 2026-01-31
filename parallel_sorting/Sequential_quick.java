@@ -29,8 +29,7 @@ public class Sequential_quick extends Sorting{
             swap(list, pivot, end);
             while(ptr2 <= end){
                 if(list[ptr2] <= pivotVal){
-                    swap(list, ptr1 + 1, ptr2);
-                    ptr1++;
+                    swap(list, ++ptr1, ptr2);
                 } 
                 ptr2++;
             }
