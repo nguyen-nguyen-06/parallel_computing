@@ -18,10 +18,8 @@ public class Testing {
 
     @Before
     public void setUp() {
-        //Set cutoff values for parallel quicksort simple
-        Parallel_quick_simple.CUTOFF = 100;
         // Set cutoff values for parallel quicksort
-        Parallel_quick.CUTOFF = 500;
+        Parallel_quick.CUTOFFPARTITION = 500;
         Parallel_quick.CUTOFFQUICK = 100;
         // Set cutoff value for parallel merge sort
         Parallel_merge.CUTOFFMERGE = 100;
