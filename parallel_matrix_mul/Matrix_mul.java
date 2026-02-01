@@ -36,6 +36,7 @@ public abstract class Matrix_mul {
         Integer rowB = Integer.parseInt(in.next());
         Integer colB = Integer.parseInt(in.next());
         if(colA != rowB){
+            in.close();
             throw new IllegalArgumentException("Size Mismatch");
         }
         matB = new double[rowB][colB];
@@ -44,6 +45,7 @@ public abstract class Matrix_mul {
                 matA[i][j] = Double.parseDouble(in.next());
             }
         }
+        in.close();
     }
 
     /**
@@ -105,6 +107,7 @@ public abstract class Matrix_mul {
             }
             out.println();
         }
+        out.close();
     }
 
     /**

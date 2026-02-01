@@ -29,7 +29,7 @@ public abstract class Sorting{
             list[index] = Integer.parseInt(in.next());
             index++;
         }
-
+        in.close();
     }
 
     /**
