@@ -14,8 +14,7 @@ public class BenchMark {
     private static final int SEED = 50;
 
     private static final int[] SIZES = {
-        100, 200, 300, 400, 500, 600, 700, 800, 900, 1000,
-        1200, 1400, 1600, 1800, 2000, 2500, 3000, 4000, 5000
+        2000
     };
 
     public static void main(String[] args) {
@@ -32,7 +31,7 @@ public class BenchMark {
 
     private static void setUp() {
         Parallel_matrix.MATRIX_CUTOFF = 128;
-        Parallel_matrix.DOT_CUTOFF = 256;
+        Parallel_matrix.DOT_CUTOFF = 10000;
     }
 
     private static double[][] generateRandomMatrix(int rows, int cols) {

@@ -16,8 +16,8 @@ import java.util.concurrent.RecursiveTask;
  */
 public class Parallel_matrix extends Matrix_mul{
     static ForkJoinPool POOL = new ForkJoinPool();
-    static int MATRIX_CUTOFF;
-    static int DOT_CUTOFF;
+    public static int MATRIX_CUTOFF = 128;
+    public static int DOT_CUTOFF = 10000;
 
     /**
      * Constructs a Parallel_matrix by reading 2 matrices from the specified file.
@@ -111,9 +111,9 @@ public class Parallel_matrix extends Matrix_mul{
             if(endR - startR <= MATRIX_CUTOFF || endC - startC <= MATRIX_CUTOFF){
                 for(int i = startR; i <= endR; i++){
                     for(int j = startC; j <= endC; j++){
-                        //matAns[i][j] = POOL.invoke(new DotProductTask(matA, matB, i, j, 0, matA[0].length));
-                        //might be slower
-                        matAns[i][j] = new DotProductTask(matA, matB, i, j, 0, matA[0].length - 1).compute();
+                        matAns[i][j] = POOL.invoke(new DotProductTask(matA, matB, i, j, 0, matA[0].length - 1));
+                        //the below might be faster
+                        //matAns[i][j] = new DotProductTask(matA, matB, i, j, 0, matA[0].length - 1).compute();
                     }
                 }
             } else{
