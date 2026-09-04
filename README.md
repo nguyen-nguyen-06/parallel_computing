@@ -201,5 +201,4 @@ javac -d out -cp out YourProgram.java
 java -cp out YourProgram
 ```
 
-Note: `-cp out` tells Java where to find the compiled library classes. This is needed because your code imports classes that are already compiled in the `out/` folder.
 See the Makefile for more information.
