@@ -20,7 +20,7 @@ import java.util.concurrent.RecursiveAction;
 
 public class Parallel_merge extends Sorting{
     static ForkJoinPool POOL = new ForkJoinPool();
-    static int CUTOFFMERGE;
+    public static int CUTOFFMERGE = 4000;
 
     /**
      * Constructs a Parallel_merge sorter with the given array.

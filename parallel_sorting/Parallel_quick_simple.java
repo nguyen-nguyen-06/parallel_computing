@@ -24,7 +24,7 @@ import java.util.concurrent.RecursiveAction;
  */
 
 public class Parallel_quick_simple extends Sorting{
-    static int CUTOFFQUICK;
+    public static int CUTOFFQUICK = 4000;
     static final ForkJoinPool POOL = new ForkJoinPool();
 
     /**

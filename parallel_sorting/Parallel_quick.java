@@ -28,8 +28,8 @@ import java.util.concurrent.RecursiveTask;
 
 public class Parallel_quick extends Sorting{
     static ForkJoinPool POOL = new ForkJoinPool();
-    static int CUTOFFPARTITION;
-    static int CUTOFFQUICK;
+    public static int CUTOFFPARTITION = 10000;
+    public static int CUTOFFQUICK = 4000;
 
     /**
      * Constructs a Parallel_quick sorter by reading from a file.

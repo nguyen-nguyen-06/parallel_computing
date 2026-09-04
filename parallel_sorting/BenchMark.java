@@ -13,11 +13,8 @@ public class BenchMark {
     private static final int TEST_ITERATIONS = 5;
     private static final int SEED = 50;
 
-    // Array sizes
     private static final int[] SIZES = {
-        10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 750_000,
-        1_000_000, 1_250_000, 1_500_000, 2_000_000, 2_500_000, 3_000_000, 3_500_000,
-        4_000_000, 4_500_000, 5_000_000, 20_000_000
+        100_000, 500_000, 1_000_000, 5_000_000, 20_000_000
     };
 
     public static void main(String[] args) {
@@ -33,9 +30,10 @@ public class BenchMark {
     }
 
     private static void setUp() {
-        Parallel_quick.CUTOFFPARTITION = 1000;
-        Parallel_quick.CUTOFFQUICK = 250;
-        Parallel_merge.CUTOFFMERGE = 250;
+        Parallel_quick.CUTOFFPARTITION = 10000;
+        Parallel_quick.CUTOFFQUICK = 4000;
+        Parallel_quick_simple.CUTOFFQUICK = 4000;
+        Parallel_merge.CUTOFFMERGE = 4000;
     }
 
     private static int[] generateRandomArray(int size) {
