@@ -1,6 +1,23 @@
 # Parallel Computing on CPU
 
-Parallel implementations of sorting and matrix multiplication algorithms in Java using the Fork/Join framework. Benchmarked on local hardware (8-core, 16-thread) and AWS EC2 (64 vCPUs).
+My exploration of parallelism on CPU through sorting and matrix multiplication. I built the programs from scratch using Java Fork/Join framework with divide-and-conquer algorithms for scaling with multiple processors. Benchmarked on local hardware (8-core, 16-thread) and AWS EC2 (64 vCPUs) to measure the speedup.
+
+## Table of Contents
+
+- [Algorithms](#algorithms)
+  - [Parallel Sorting](#parallel-sorting)
+  - [Parallel Matrix Multiplication](#parallel-matrix-multiplication)
+- [Results](#results)
+- [Structure](#structure)
+- [How to Try It Yourself](#how-to-try-it-yourself)
+  - [Compile](#compile)
+  - [Run Interactive Client](#run-interactive-client)
+  - [Run Benchmarks](#run-benchmarks)
+  - [Clean Up Results](#clean-up-results)
+- [How To Use In Your Code](#how-to-use-in-your-code)
+  - [Sorting](#sorting)
+  - [Matrix Multiplication](#matrix-multiplication)
+  - [Compiling and Running from Command Line](#compiling-and-running-from-command-line)
 
 ## Algorithms
 
@@ -53,29 +70,136 @@ parallel_computing/
 │   ├── BenchMark.java             # Sorting benchmark
 │   └── Testing.java               # Tests
 ├── parallel_matrix_mul/
-    ├── Matrix_mul.java            # Base class
-    ├── Sequential_matrix.java     # Sequential multiplication
-    ├── Parallel_matrix.java       # Parallel multiplication
-    ├── BenchMark.java             # Matrix benchmark
-    └── Testing.java               # Tests
+│   ├── Matrix_mul.java            # Base class
+│   ├── Sequential_matrix.java     # Sequential multiplication
+│   ├── Parallel_matrix.java       # Parallel multiplication
+│   ├── BenchMark.java             # Matrix benchmark
+│   └── Testing.java               # Tests
+├── Client.java                    # Interactive CLI client
+└── Makefile
 ```
 
-## How to Run
+## How to Try It Yourself
+
+### Java
+
+This project requires **JDK 11 or later** (any recent JDK works).
+
+You also need `make` (GNU make) to use the commands below.
 
 ### Compile
 
 ```bash
-mkdir -p out
-javac -d out parallel_sorting/Sorting.java parallel_sorting/Sequential_quick.java parallel_sorting/Sequential_merge.java parallel_sorting/Parallel_quick.java parallel_sorting/Parallel_quick_simple.java parallel_sorting/Parallel_merge.java parallel_sorting/BenchMark.java
-javac -d out parallel_matrix_mul/Matrix_mul.java parallel_matrix_mul/Sequential_matrix.java parallel_matrix_mul/Parallel_matrix.java parallel_matrix_mul/BenchMark.java
+make compile
 ```
 
-### Run Benchmarks
+### Run Interactive Client
 
 ```bash
-java -cp out parallel_computing.parallel_sorting.BenchMark
-java -cp out parallel_computing.parallel_matrix_mul.BenchMark
+make run
 ```
+This command runs a program that accept your file name as a parameter and executes the content inside the given file.
+
+It will let you choose sorting or matrix multiplication, input via file, then runs with sequential vs parallel and prints the comparison.
+
+### Run Benchmarks 
+
+```bash
+make benchmark-sorting
+make benchmark-matrix
+make benchmark          # run both
+```
+This command will run the BenchMark.java in each folder with random input and different sizes to measure the speed up between parallel code and sequential code.
 
 Results are saved to `sorting_benchmark.csv` and `matrix_benchmark.csv`.
 
+### Clean Up 
+
+```bash
+make clean
+```
+
+## How To Use In Your Code
+
+If you're using an IDE like VS Code with Java installed (Java Extension Pack) or IntelliJ, import the classes and use them like any normal Java class. You can run your code with the run button as usual.
+
+#### Sorting
+
+All sorting classes extend `Sorting` and share the same interface.
+
+Available parallel sorting classes: Parallel_merge, Parallel_quick, Parallel_quick_simple. 
+
+Note: Based on your array size and number of processors, you may need to tune the CUTOFF. The CUTOFF can be set to any value but the default is shown in the examples below.
+
+```java
+import parallel_computing.parallel_sorting.*;
+
+// This part on how to set CUTOFF values is optional.  
+Parallel_merge.CUTOFFMERGE = 4000;          // Here is the default value
+Parallel_quick.CUTOFFPARTITION = 10000;
+Parallel_quick.CUTOFFQUICK = 4000;
+//
+
+// How to sort an array
+int[] data = {5, 3, 8, 1, 9, 2, 7};
+
+// All three return a new sorted array {1, 2, 3, 5, 7, 8, 9}
+int[] result1 = new Parallel_merge(data).sort();        //fastest
+int[] result2 = new Parallel_quick(data).sort();
+int[] result3 = new Parallel_quick_simple(data).sort();
+
+
+// How to sort an array from a file
+// File format: <size> <val1> <val2> ... <valN>
+// Example file contents: 5 3 1 4 1 5
+// Return: sorted array {1, 1, 3, 4, 5}
+Parallel_merge sorter = new Parallel_merge("input.txt");
+int[] sorted = sorter.sort();
+```
+
+#### Matrix Multiplication
+
+All matrix classes extend `Matrix_mul` and share the same interface.
+
+Available parallel matrix classes: Parallel_matrix
+
+```java
+import parallel_computing.parallel_matrix_mul.*;
+
+// Similar to Sorting classes, this part on how to set CUTOFF value is optional
+Parallel_matrix.MATRIX_CUTOFF = 128;    // Default value
+Parallel_matrix.DOT_CUTOFF = 10000;     
+
+// From arrays
+double[][] matA = {{1, 2}, {3, 4}};
+double[][] matB = {{5, 6}, {7, 8}};
+
+double[][] result = new Parallel_matrix(matA, matB).multiply();
+
+// From a file (format: <rowA> <colA> <values...> <rowB> <colB> <values...>)
+// Example file contents: 2 2 1.0 2.0 3.0 4.0 2 2 5.0 6.0 7.0 8.0
+Parallel_matrix mul = new Parallel_matrix("input.txt");
+double[][] result = mul.multiply();
+
+// Write result to file
+mul.multiplyPrintFile("output.txt");
+```
+
+#### Compiling and Running from Command Line
+
+Ignore this if you run on IntelliJ or VS Code (with Java Extension Pack).
+
+```bash
+# 1. Compile the library
+make compile    # saves .class files to out/ folder
+                # same level as parallel_matrix_mul and parallel_sorting folders
+
+# 2. Compile your code and save to the same folder
+javac -d out -cp out YourProgram.java
+
+# 3. Run
+java -cp out YourProgram
+```
+
+Note: `-cp out` tells Java where to find the compiled library classes. This is needed because your code imports classes that are already compiled in the `out/` folder.
+See the Makefile for more information.
